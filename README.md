@@ -413,7 +413,54 @@ class profile::mysql::server {
   }
 }
 ```
+* Create Role (Roles should only contain profiles and nothing else.) to include lamp stack
+```
+cd /etc/puppetlabs/code/environments/production/modules/
+pdk new module role
+
+cd role
+pdk new class lamp
+
+vim manifests/lamp.pp
+class role::lamp {
+  include profile::base
+  include profile::apache
+  include profile::mysql::server
+}
+```
+* Make changes in the main manifest file `site.pp`
+```
+node abhishekjthackeray2c.mylabserver.com {
+  include role::lamp
+}
+
+node abhishekjthackeray3c.mylabserver.com {
+  include role::lamp
+}
+```
+NOTE: mysql seems to have some dependency issue in ubuntu , run `sudo apt --fix-broken install` and try to converge again
 #### Rspec 
+* Test exisiting default spec 
+```
+pdk test unit --tests=spec/classes/apache_spec.rb
+```
+Edit the apache_spec.rb to include the installed classes and rerun the test 
+```
+require 'spec_helper'
+
+describe 'apache' do
+  on_supported_os.each do |os, os_facts|
+    context "on #{os}" do
+      let(:facts) { os_facts }
+
+      it { is_expected.to contain_class('apache::install') }
+      it { is_expected.to contain_class('apache::config') }
+      it { is_expected.to contain_class('apache::service') }
+      it { is_expected.to compile }
+    end
+  end
+end
+```
 
 #### Resources
 * Puppet classes: include vs Require vs Contain: https://www.youtube.com/watch?v=jvDLXykcxiA
