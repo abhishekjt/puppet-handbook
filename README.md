@@ -1,4 +1,4 @@
-# puppet-handbook (WIP)
+# puppet-handbook
 ## Hands-on session
 ____
 ### Standard puppet directory structure
