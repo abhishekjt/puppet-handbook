@@ -204,8 +204,165 @@ class apache  (
 }
 ```
 #### Metaparameters
-#### Templating
-#### Defined Types
+* Add a new Service class 
+```
+# @summary
+#   Allows for the Apache service to restart when triggered
+class apache::service {
+  service { "${apache::service_name}":
+    ensure     => $apache::service_ensure,
+    enable     => $apache::service_enable,
+    hasrestart => true,
+  }
+}
+```
+* Edit the Hiera data accordingly
+```
+$ vim data/RedHat-family.yaml:
+apache::service_name: 'httpd'
+
+$ vim data/Debian-family.yaml:
+apache::service_name: 'apache2'
+
+$ vim data/common.yaml
+apache::service_name: 'apache2'
+apache::service_ensure: 'running'
+apache::service_enable: true
+```
+* Modify init file 
+```class apache  (
+  String $install_name,
+  String $install_ensure,
+  String $config_ensure,
+  String $config_path,
+  String $service_name,
+  Enum["running", "stopped"] $service_ensure,
+  Boolean $service_enable,
+) {
+  contain apache::install
+  contain apache::config
+  contain apache::service
+
+  Class['::apache::install']
+  -> Class['::apache::config']
+  ~> Class['::apache::service']
+}
+```
+* Test converge on any of the boxes running puppet agent 
+
+#### Templating and Defined Types
+* Desired template for setting up virtual hosts in Apache
+```
+<VirtualHost *:80>
+    ServerName subdomain.mylabserver.com
+    ServerAlias subdomain
+    ServerAdmin admin@mylabserver.com
+    DocumentRoot /var/www/subdomain/html
+</VirtualHost>
+```
+* Create a template called `vhosts.conf.epp` 
+```
+vim templates/vhosts.conf.epp
+
+<VirtualHost *:<%= $port %>>
+    ServerName <%= $subdomain %>.<%= $facts[fqdn] %>
+    ServerAlias <%= $subdomain %>
+    <% if $admin =~ String[1] { -%>
+      ServerAdmin <%= $admin %>
+    <% } -%>
+    DocumentRoot <%= $docroot %>
+</VirtualHost>
+```
+* Create defined type ```pdk new defined_type vhosts``` with the below contents
+```
+define apache::vhosts (
+  Integer $port,
+  String $subdomain,
+  String $admin,
+  String[1] $docroot,
+) {
+  file { "${docroot}":
+    ensure => 'directory',
+    owner  => $apache::vhosts_owner,
+    group  => $apache::vhosts_group,
+  }
+  file { "${apache::vhosts_dir}/${subdomain}.conf":
+    ensure  => 'file',
+    owner   => $apache::vhosts_owner,
+    group   => $apache::vhosts_group,
+    mode    => '0644',
+    content => epp('apache/vhosts.conf.epp', {'port' => $port, 'subdomain' => $subdomain, 'admin' => $admin, 'docroot' => $docroot}),
+    notify  => Service["${apache::service_name}"],
+  }
+}
+```
+* Add Hiera data, all of which is OS family-specific
+```
+# data/RedHat-family.yaml
+apache::vhosts_dir: '/etc/httpd/conf.d'
+apache::vhosts_owner: 'apache'
+apache::vhosts_group: 'apache'
+
+# data/Debian-family.yaml
+apache::vhosts_dir: '/etc/apache2/sites-available'
+apache::vhosts_owner: 'www-data'
+apache::vhosts_group: 'www-data'
+
+# data/common.yaml
+apache::vhosts_dir: '/etc/apache2/sites-available'
+apache::vhosts_owner: 'www-data'
+apache::vhosts_group: 'www-data'
+```
+* Make changed in init.pp
+```
+class apache  (
+  String $install_name,
+  String $install_ensure,
+  String $config_ensure,
+  String $config_path,
+  String $service_name,
+  Enum["running", "stopped"] $service_ensure,
+  Boolean $service_enable,
+  String[1] $vhosts_dir,
+  String[1] $vhosts_owner,
+  String[1] $vhosts_group,
+) {
+  contain apache::install
+  contain apache::config
+  contain apache::service
+
+  Class['::apache::install']
+  -> Class['::apache::config']
+  ~> Class['::apache::service']
+}
+
+```
+* Make changed to the main manifest : site.pp
+```
+node abhishekjthackeray3c.mylabserver.com {
+
+  include apache
+
+  apache::vhosts { 'puppet_project':
+    port      => 80,
+    subdomain => 'puppetproject',
+    admin     => 'admin@mylabserver.com',
+    docroot   => '/var/www/html/puppetproject',
+  }
+
+
+
+  apache::vhosts { 'puppet_project_dev':
+    port      => 8081,
+    subdomain => 'puppetproject-dev',
+    admin     => '',
+    docroot   => '/var/www/html/puppetproject-dev',
+  }
+}
+
+```
+* Test it out on Ubuntu managed node
+
 #### Profiles and Roles
 #### Rspec 
 
