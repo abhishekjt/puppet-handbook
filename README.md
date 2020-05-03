@@ -364,6 +364,55 @@ node abhishekjthackeray3c.mylabserver.com {
 * Test it out on Ubuntu managed node
 
 #### Profiles and Roles
+* install the below puppet modules
+```
+cd /etc/puppetlabs/code/environments/production/modules/
+
+puppet module install puppetlabs-motd
+puppet module install puppet-php
+puppet module install puppetlabs-mysql
+
+```
+* Create a new profile module and base class 
+```
+pdk new module profile
+pdk new class base
+vim manifests/base.pp
+
+class profile::base {
+  include ::ntp
+
+  class { '::motd':
+    content => "This host is managed by Puppet!\n",
+  }
+
+}
+```
+* Add apache profile 
+```
+pdk new class apache
+vim manifests/apache.pp
+
+class profile::apache {
+  include ::apache
+  class { '::php':
+    pear => true,
+  }
+}
+
+```
+* create mysql-server profile
+```
+pdk new class mysql::server
+vim manifests/mysql/server.pp
+
+class profile::mysql::server {
+  class { '::mysql::server':
+    root_password           => 'passwordhash',
+    remove_default_accounts => true,
+  }
+}
+```
 #### Rspec 
 
 #### Resources
