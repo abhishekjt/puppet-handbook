@@ -1,9 +1,10 @@
 # puppet-handbook (WIP)
-### Hands-on session
-#### Standard puppet directory structure
+## Hands-on session
+____
+### Standard puppet directory structure
 * Puppet catalogue of modules https://forge.puppet.com/
 * Install ntp(Network time protocol) puppet module:`puppet module install puppetlabs-ntp --version 7.4.0` and explore the directory structure under `/etc/puppetlabs/code/environments/production/modules` using `tree` command. 
-#### PDK (puppet development Kit) Installation
+### PDK (puppet development Kit) Installation
 ```
 $ wget https://apt.puppetlabs.com/puppet5-release-bionic.deb
 $ sudo dpkg -i puppet5-release-bionic.deb
@@ -14,7 +15,8 @@ $ sudo apt install pdk
 #Example usage: pdk new class install
 ```
 
-#### First apache class
+### First apache class
+
 * Create new module Apache
 ```
 $ cd /etc/puppetlabs/code/environments/production/modules
@@ -53,7 +55,9 @@ node abhishekjthackeray2c.mylabserver.com {
 }
 ```
 * Test changes on `abhishekjthackeray2c.mylabserver.com` with a dry run: `puppet agent -t --noop`
-#### params.pp
+
+### params.pp
+
 * Create params.pp 
 ```
 $ pdk new class params
@@ -89,7 +93,9 @@ node abhishekjthackeray3c.mylabserver.com {
 }
 ```
 * Converge both the managed nodes
-#### Hiera 
+
+### Hiera 
+
 * Edit hiera.yaml
 ```
 $ cd /etc/puppetlabs/code/environments/production/modules/apache
@@ -147,7 +153,9 @@ class apache::install {
   }
 }
 ```
-#### Files
+
+### Files
+
 * Download the required conf files
 ```
 $ cd /etc/puppetlabs/code/environments/production/modules/apache
@@ -203,7 +211,9 @@ class apache  (
   -> Class['::apache::config']
 }
 ```
-#### Metaparameters
+
+### Metaparameters
+
 * Add a new Service class 
 ```
 # @summary
@@ -250,7 +260,8 @@ apache::service_enable: true
 ```
 * Test converge on any of the boxes running puppet agent 
 
-#### Templating and Defined Types
+### Templating and Defined Types
+
 * Desired template for setting up virtual hosts in Apache
 ```
 <VirtualHost *:80>
@@ -363,7 +374,8 @@ node abhishekjthackeray3c.mylabserver.com {
 ```
 * Test it out on Ubuntu managed node
 
-#### Profiles and Roles
+### Profiles and Roles
+
 * install the below puppet modules
 ```
 cd /etc/puppetlabs/code/environments/production/modules/
@@ -439,7 +451,9 @@ node abhishekjthackeray3c.mylabserver.com {
 }
 ```
 NOTE: mysql seems to have some dependency issue in ubuntu , run `sudo apt --fix-broken install` and try to converge again
-#### Rspec 
+
+#### Rspec
+
 * Test exisiting default spec 
 ```
 pdk test unit --tests=spec/classes/apache_spec.rb
